@@ -458,6 +458,7 @@ a{ color:inherit; }
 </style>
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -625,6 +626,7 @@ const tabLink = $('tabLink');
 const panelLink = $('panelLink');
 
 // Spotify section now only supports link mode
+// Spotify section now only supports link mode
 function setSpotifyMode(){
   state.spotifyMode = 'link';
   tabLink.classList.add('active');
@@ -633,3 +635,141 @@ function setSpotifyMode(){
   updateProgress();
 }
 
+// Update progress bar based on filled required fields
+function updateProgress(){
+  const total = REQUIRED_FIELDS.length;
+  let filled = 0;
+  REQUIRED_FIELDS.forEach(id => {
+    if($(id).value.trim().length > 0) filled++;
+  });
+  const percent = Math.round((filled / total) * 100);
+  $('progressBar').style.width = percent + '%';
+}
+
+// Validate all fields on submit
+function validateAll(){
+  let allValid = true;
+  REQUIRED_FIELDS.forEach(id => {
+    if(!validateField(id)) allValid = false;
+  });
+  return allValid;
+}
+
+// ================================================================
+// TELEGRAM PRE-FILLED DIRECT MESSAGE
+// ================================================================
+
+/**
+ * Build and send the pre-filled Telegram message
+ * This constructs a URL that opens Telegram with the form data pre-filled
+ */
+function sendTelegramMessage(){
+  // Collect all form data
+  const fullName = $('fullName').value.trim();
+  const nickname = $('nickname').value.trim();
+  const address = $('address').value.trim();
+  const memory = $('memory').value.trim();
+  const spotifyLink = $('spotifyLink').value.trim();
+  const knownFor = $('knownFor').value.trim();
+  const quote = $('quote').value.trim();
+  const thanks = $('thanks').value.trim();
+
+  // Build the message text with formatting
+  let message = '🎓 *NovaEra Graduation Magazine Submission*\n\n';
+  message += '*Full Name:* ' + fullName + '\n';
+  if(nickname) message += '*Nickname:* ' + nickname + '\n';
+  message += '*Contact:* ' + address + '\n\n';
+
+  if(memory) message += '*Favorite Memory:*\n' + memory + '\n\n';
+  if(spotifyLink) message += '*Spotify:* ' + spotifyLink + '\n\n';
+  if(knownFor) message += '*Known For:*\n' + knownFor + '\n\n';
+  if(quote) message += '*Quote/Message:*\n' + quote + '\n\n';
+  if(thanks) message += '*Special Thanks:*\n' + thanks + '\n\n';
+
+  message += 'Submitted via NovaEra Graduation Form';
+
+  // Encode the message for URL
+  const encodedMessage = encodeURIComponent(message);
+
+  // ================================================================
+  // EDITABLE: TELEGRAM USERNAME OR BOT
+  // Replace 'YOUR_USERNAME' with your actual Telegram username or bot name
+  // Examples:
+  //   - For direct user: https://t.me/johndoe?text=...
+  //   - For bot: https://t.me/mybot?start=...
+  // ================================================================
+  const TELEGRAM_USERNAME = 'YOUR_USERNAME'; // <-- CHANGE THIS
+
+  // Build the Telegram pre-filled message URL
+  const telegramUrl = 'https://t.me/' + TELEGRAM_USERNAME + '?text=' + encodedMessage;
+
+  // Show success overlay
+  $('successOverlay').classList.add('active');
+
+  // Open Telegram after short delay (1.5 seconds)
+  setTimeout(function(){
+    window.open(telegramUrl, '_blank');
+    $('successOverlay').classList.remove('active');
+  }, 1500);
+}
+
+// ================================================================
+// EVENT HANDLERS
+// ================================================================
+
+// Submit button click handler
+$('submitBtn').addEventListener('click', function(e){
+  e.preventDefault();
+
+  // Validate all required fields
+  if(!validateAll()){
+    // Focus first invalid field
+    const firstInvalid = document.querySelector('.field.invalid input, .field.invalid textarea');
+    if(firstInvalid) firstInvalid.focus();
+    return;
+  }
+
+  // Show loading state
+  this.classList.add('loading');
+  this.disabled = true;
+
+  // Send to Telegram
+  sendTelegramMessage();
+
+  // Reset button state after delay
+  const btn = this;
+  setTimeout(function(){
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }, 2000);
+});
+
+// Reset button click handler
+$('resetBtn').addEventListener('click', function(e){
+  e.preventDefault();
+
+  // Reset form
+  document.querySelector('form').reset();
+
+  // Clear validation states
+  document.querySelectorAll('.field').forEach(function(field){
+    field.classList.remove('valid', 'invalid');
+  });
+
+  // Update progress
+  updateProgress();
+});
+
+// Close success overlay when clicked
+$('successOverlay').addEventListener('click', function(){
+  this.classList.remove('active');
+});
+
+// Initialize on page load
+setSpotifyMode();
+updateProgress();
+
+</script>
+
+</body>
+</html>
