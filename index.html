@@ -354,40 +354,6 @@ a{ color:inherit; }
 .spotify-panel{ display:none; }
 .spotify-panel.active{ display:block; }
 
-.upload-zone{
-  border:1.5px dashed rgba(11,26,77,0.2);
-  border-radius:var(--radius-sm);
-  padding:24px 14px;
-  text-align:center;
-  cursor:pointer;
-  color:var(--ink-faint);
-  font-size:13px;
-  transition:all .2s ease;
-  background:rgba(255,255,255,0.4);
-}
-.upload-zone:hover, .upload-zone.drag-over{
-  border-color:var(--blue);
-  background:rgba(47,95,224,0.07);
-  color:var(--blue-deep);
-}
-.upload-zone svg{ margin-bottom:6px; }
-.upload-preview{
-  display:none;
-  align-items:center; gap:10px;
-  margin-top:10px;
-  padding:9px 10px;
-  background:rgba(255,255,255,0.6);
-  border-radius:var(--radius-sm);
-  border:1px solid rgba(11,26,77,0.08);
-}
-.upload-preview.active{ display:flex; }
-.upload-preview img{ width:44px; height:44px; object-fit:cover; border-radius:9px; }
-.upload-preview-name{ font-size:12px; color:var(--ink-soft); flex:1; word-break:break-all; }
-.upload-remove{
-  background:none; border:none; color:var(--err); cursor:pointer;
-  font-size:15px; padding:4px;
-}
-
 /* ================================================================
    BUTTONS — puffy clay, blue gradient like the poster's chips
    ================================================================ */
@@ -491,6 +457,7 @@ a{ color:inherit; }
 .footer img{ height:14px; vertical-align:middle; opacity:0.8; margin:0 3px -2px; }
 </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -550,26 +517,14 @@ a{ color:inherit; }
         <label class="field-label" for="spotifyLink" style="margin-bottom:10px;">Spotify Code <span class="optional-tag">favorite song</span></label>
         <div class="spotify-toggle" role="tablist" aria-label="Spotify submission method">
           <button type="button" class="active" id="tabLink" role="tab" aria-selected="true" aria-controls="panelLink">🔗 Paste a link</button>
-          <button type="button" id="tabUpload" role="tab" aria-selected="false" aria-controls="panelUpload">🖼 Upload image</button>
+          
         </div>
 
         <div class="spotify-panel active" id="panelLink" role="tabpanel">
           <input class="input" type="url" id="spotifyLink" name="spotifyLink" placeholder="https://open.spotify.com/track/...">
         </div>
 
-        <div class="spotify-panel" id="panelUpload" role="tabpanel">
-          <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="Upload Spotify code image">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-            <div>Tap to upload your Spotify Code image</div>
-          </div>
-          <input type="file" id="spotifyFile" accept="image/*" style="display:none;">
-          <div class="upload-preview" id="uploadPreview">
-            <img id="uploadPreviewImg" alt="Uploaded Spotify code preview">
-            <span class="upload-preview-name" id="uploadPreviewName"></span>
-            <button type="button" class="upload-remove" id="uploadRemove" aria-label="Remove uploaded image">✕</button>
-          </div>
-        </div>
-      </div>
+        
 
       <h2 class="section-title">In Your Words</h2>
 
@@ -620,7 +575,7 @@ a{ color:inherit; }
 </footer>
 
 <script>
-const state = { spotifyMode: 'link', spotifyImageDataUrl: null, spotifyImageName: null };
+const state = { spotifyMode: 'link' };
 const REQUIRED_FIELDS = ['fullName', 'address'];
 
 function $(id){ return document.getElementById(id); }
@@ -666,188 +621,15 @@ document.querySelectorAll('.char-counter').forEach(counter => {
   refresh();
 });
 
-const tabLink = $('tabLink'), tabUpload = $('tabUpload');
-const panelLink = $('panelLink'), panelUpload = $('panelUpload');
+const tabLink = $('tabLink');
+const panelLink = $('panelLink');
 
-function setSpotifyMode(mode){
-  state.spotifyMode = mode;
-  const isLink = mode === 'link';
-  tabLink.classList.toggle('active', isLink);
-  tabUpload.classList.toggle('active', !isLink);
-  tabLink.setAttribute('aria-selected', isLink);
-  tabUpload.setAttribute('aria-selected', !isLink);
-  panelLink.classList.toggle('active', isLink);
-  panelUpload.classList.toggle('active', !isLink);
+// Spotify section now only supports link mode
+function setSpotifyMode(){
+  state.spotifyMode = 'link';
+  tabLink.classList.add('active');
+  tabLink.setAttribute('aria-selected', 'true');
+  panelLink.classList.add('active');
   updateProgress();
 }
-tabLink.addEventListener('click', () => setSpotifyMode('link'));
-tabUpload.addEventListener('click', () => setSpotifyMode('upload'));
 
-const uploadZone = $('uploadZone');
-const spotifyFile = $('spotifyFile');
-const uploadPreview = $('uploadPreview');
-const uploadPreviewImg = $('uploadPreviewImg');
-const uploadPreviewName = $('uploadPreviewName');
-const uploadRemove = $('uploadRemove');
-
-function handleFile(file){
-  if(!file || !file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    state.spotifyImageDataUrl = e.target.result;
-    state.spotifyImageName = file.name;
-    uploadPreviewImg.src = e.target.result;
-    uploadPreviewName.textContent = file.name;
-    uploadPreview.classList.add('active');
-    uploadZone.style.display = 'none';
-    updateProgress();
-  };
-  reader.readAsDataURL(file);
-}
-
-uploadZone.addEventListener('click', () => spotifyFile.click());
-uploadZone.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); spotifyFile.click(); } });
-spotifyFile.addEventListener('change', () => handleFile(spotifyFile.files[0]));
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('drag-over');
-  handleFile(e.dataTransfer.files[0]);
-});
-uploadRemove.addEventListener('click', () => {
-  state.spotifyImageDataUrl = null;
-  state.spotifyImageName = null;
-  spotifyFile.value = '';
-  uploadPreview.classList.remove('active');
-  uploadZone.style.display = '';
-  updateProgress();
-});
-
-const PROGRESS_FIELDS = ['fullName','nickname','address','memory','knownFor','quote','thanks'];
-
-function updateProgress(){
-  let filled = 0;
-  PROGRESS_FIELDS.forEach(id => { if($(id).value.trim().length > 0) filled++; });
-  if((state.spotifyMode === 'link' && $('spotifyLink').value.trim()) ||
-     (state.spotifyMode === 'upload' && state.spotifyImageDataUrl)){
-    filled++;
-  }
-  const total = PROGRESS_FIELDS.length + 1;
-  const pct = Math.round((filled / total) * 100);
-  $('progressFill').style.width = pct + '%';
-  $('progressRail').setAttribute('aria-valuenow', pct);
-  $('progressLabel').textContent = pct + '% complete';
-}
-
-document.querySelectorAll('#magForm input, #magForm textarea').forEach(el => {
-  el.addEventListener('input', updateProgress);
-});
-
-const form = $('magForm');
-const submitBtn = $('submitBtn');
-const successOverlay = $('successOverlay');
-
-function validateAll(){
-  let allValid = true;
-  REQUIRED_FIELDS.forEach(id => {
-    const ok = validateField(id);
-    if(!ok){
-      allValid = false;
-      setFieldState(id, false, true);
-    }
-  });
-  return allValid;
-}
-
-function buildMessage(){
-  const fullName = $('fullName').value.trim();
-  const nickname = $('nickname').value.trim() || '—';
-  const address = $('address').value.trim();
-  const memory = $('memory').value.trim() || '—';
-  const knownFor = $('knownFor').value.trim() || '—';
-  const quote = $('quote').value.trim() || '—';
-  const thanks = $('thanks').value.trim() || '—';
-
-  let spotifyLine = '—';
-  if(state.spotifyMode === 'link' && $('spotifyLink').value.trim()){
-    spotifyLine = $('spotifyLink').value.trim();
-  } else if(state.spotifyMode === 'upload' && state.spotifyImageDataUrl){
-    spotifyLine = 'Spotify Code Image Attached';
-  }
-
-  return [
-    '🎓 Graduation Magazine Submission',
-    '',
-    '👤 Full Name:',
-    fullName,
-    '',
-    '😎 Nickname:',
-    nickname,
-    '',
-    '📞 Contact Info:',
-    address,
-    '',
-    '💭 Favorite Memory:',
-    memory,
-    '',
-    '🎵 Spotify:',
-    spotifyLine,
-    '',
-    '⭐ Known For:',
-    knownFor,
-    '',
-    '💬 Quote or Message:',
-    quote,
-    '',
-    '❤️ Special Thanks:',
-    thanks
-  ].join('\n');
-}
-
-form.addEventListener('submit', function(e){
-  e.preventDefault();
-
-  if(!validateAll()){
-    const firstInvalid = document.querySelector('.field.invalid');
-    if(firstInvalid) firstInvalid.scrollIntoView({behavior:'smooth', block:'center'});
-    return;
-  }
-
-  const confirmed = window.confirm('Are you sure you want to submit your Graduation Magazine information?');
-  if(!confirmed) return;
-
-  submitBtn.classList.add('loading');
-  submitBtn.disabled = true;
-  successOverlay.classList.add('active');
-
-  const message = buildMessage();
-  const encoded = encodeURIComponent(message);
-  const telegramUrl = 'https://t.me/Novaera11?text=' + encoded;
-
-  setTimeout(() => {
-    window.location.href = telegramUrl;
-  }, 1000);
-});
-
-$('resetBtn').addEventListener('click', () => {
-  form.reset();
-  document.querySelectorAll('.field').forEach(f => f.classList.remove('valid','invalid'));
-  document.querySelectorAll('.char-counter').forEach(c => {
-    const target = $(c.dataset.for);
-    c.textContent = '0 / ' + target.getAttribute('maxlength');
-    c.classList.remove('near-limit','at-limit');
-  });
-  state.spotifyImageDataUrl = null;
-  state.spotifyImageName = null;
-  uploadPreview.classList.remove('active');
-  uploadZone.style.display = '';
-  setSpotifyMode('link');
-  updateProgress();
-});
-
-updateProgress();
-</script>
-</body>
-</html>
-   
